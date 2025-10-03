@@ -1,0 +1,11 @@
+--- a/minerl/env/core.py
++++ b/minerl/env/core.py
+@@ -353,7 +353,7 @@ class MineRLEnv(gym.Env):
+         def recursive_update(nested_dict, nested_update):
+             for k, v in nested_update.items():
+                 if k in nested_dict:
+-                    if isinstance(v, collections.Mapping):
++                    if isinstance(v, collections.abc.Mapping):
+                         r = recursive_update(nested_dict.get(k, {}), v)
+                         nested_dict[k] = r
+                     else:

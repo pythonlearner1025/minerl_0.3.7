@@ -1,0 +1,17 @@
+# MineRL 0.3.7 with compatible dependencies for Python 3.10
+minerl==0.3.7
+gym==0.23.1
+numpy==1.23.5
+
+# These are installed by minerl but we pin compatible versions
+opencv-python>=4.1.0.25
+tqdm>=4.32.2
+requests>=2.20.0
+ipython>=7.5.0
+lxml>=4.3.3
+psutil>=5.6.2
+Pyro4>=4.76
+getch>=1.0
+coloredlogs>=10.0
+matplotlib>=3.2.2
+dill>=0.3.1.1

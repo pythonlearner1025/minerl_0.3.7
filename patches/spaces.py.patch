@@ -1,0 +1,10 @@
+--- a/minerl/herobraine/hero/spaces.py
++++ b/minerl/herobraine/hero/spaces.py
+@@ -199,7 +199,6 @@ class Discrete(gym.spaces.Discrete, MineRLSpace):
+     def __init__(self, *args, **kwargs):
+         super(Discrete, self).__init__(*args, **kwargs)
+         self.eye = np.eye(self.n, dtype=np.float32)
+-        self.shape = ()
+
+     def noop(self):
+         return 0

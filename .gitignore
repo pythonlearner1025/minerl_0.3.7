@@ -1,0 +1,24 @@
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Build artifacts
+*.class
+*.jar
+!patches/
+build/
+.gradle/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+*.tmp
+*.backup
