@@ -1,13 +1,17 @@
 # MineRL 0.3.7 with Human Interaction Fix
 
-**The 15-hour bug:** One line - `collections.Mapping` → `collections.abc.Mapping`
+## Installation
 
+One command:
+```bash
+./full_install.sh
+```
 ## Quick Start
 
 ```bash
 cd /home/minjune/minerl_0.3.7
 source venv/bin/activate
-python test_minerl_server.py
+python server.py
 ```
 
 Then in another terminal:
@@ -15,19 +19,6 @@ Then in another terminal:
 cd /home/minjune/minerl_0.3.7
 source venv/bin/activate
 python -m minerl.interactor 6666
-```
-
-## Installation Status
-
-✅ **FULLY INSTALLED AND WORKING**
-
-All patches applied, Malmo rebuilt, ready to use.
-
-## Installation
-
-One command:
-```bash
-./full_install.sh
 ```
 
 This runs:
@@ -76,8 +67,3 @@ Python 3.10 removed `collections.Mapping`. MineRL 0.3.7 still used it. This caus
 - Infinite retry loops
 - Mission would load then immediately crash
 
-**One line fix, 15 hours to find.**
-
-## Lesson
-
-Always check Python/dependency versions first when running old repos. Could have saved 14.5 hours.
