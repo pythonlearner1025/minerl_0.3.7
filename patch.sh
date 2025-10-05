@@ -1,16 +1,52 @@
 #!/bin/bash
-# Apply UUID fix and build configuration
+# Apply UUID fix, JarvisVLA compatibility patches, and build configuration
+#
+# JarvisVLA Compatibility:
+# - Sets FOV to 0.0 (70° Normal) to match training data (not 1.5 = 105° fish-eye)
+# - Sets observation resolution to 640x360 (not 64x64) for native high-res capture
+#
 set -e
 
 cd "$(dirname "$0")"
 source venv/bin/activate
 
+echo "Applying JarvisVLA compatibility patches..."
+
+# Fix FOV to 70° (Normal) - JarvisVLA was trained with normal FOV, not fish-eye
+echo "[0/6] Setting Minecraft FOV to 70° (Normal)..."
+OPTIONS_FILES=(
+    "venv/minerl/data/assets/template_minecraft/options.txt"
+    "venv/minerl/env/Malmo/Minecraft/run/options.txt"
+    "venv/lib/python3.10/site-packages/minerl/data/assets/template_minecraft/options.txt"
+)
+
+for OPTIONS_FILE in "${OPTIONS_FILES[@]}"; do
+    if [ -f "$OPTIONS_FILE" ]; then
+        sed -i 's/fov:1\.5/fov:0.0/' "$OPTIONS_FILE"
+        echo "  ✓ Updated $OPTIONS_FILE (fov: 1.5 → 0.0)"
+    else
+        echo "  ⚠ $OPTIONS_FILE not found (will be created on first run)"
+    fi
+done
+
+# Fix resolution to 640x360 - JarvisVLA training resolution
+echo "[0/6] Setting observation resolution to 640x360..."
+SIMPLE_ENV_SPEC="venv/minerl/herobraine/env_specs/simple_env_spec.py"
+if [ -f "$SIMPLE_ENV_SPEC" ]; then
+    sed -i 's/self\.resolution = tuple((64, 64))/self.resolution = tuple((640, 360))/' "$SIMPLE_ENV_SPEC"
+    echo "  ✓ Updated $SIMPLE_ENV_SPEC (64x64 → 640x360)"
+else
+    echo "  ✗ $SIMPLE_ENV_SPEC not found!"
+    exit 1
+fi
+
+echo ""
 echo "Applying Malmo patches..."
 
 MALMO_DIR="$(pwd)/venv/lib/python3.10/site-packages/minerl/env/Malmo/Minecraft"
 
 # 1. Copy MalmoEnvServer.java with UUID fix
-echo "[1/4] Copying MalmoEnvServer.java with UUID fix..."
+echo "[1/6] Copying MalmoEnvServer.java with UUID fix..."
 if [ ! -f "patches/MalmoEnvServer.java" ]; then
     echo "✗ patches/MalmoEnvServer.java not found!"
     exit 1
@@ -20,7 +56,7 @@ cp "patches/MalmoEnvServer.java" "$MALMO_DIR/src/main/java/com/microsoft/Malmo/C
 echo "✓ MalmoEnvServer.java applied"
 
 # 2. Copy build.gradle
-echo "[2/4] Copying build.gradle..."
+echo "[2/6] Copying build.gradle..."
 if [ ! -f "patches/build.gradle" ]; then
     echo "✗ patches/build.gradle not found!"
     exit 1
@@ -30,7 +66,7 @@ cp "patches/build.gradle" "$MALMO_DIR/build.gradle"
 echo "✓ build.gradle applied"
 
 # 3. Build or copy MixinGradle JAR (build-first philosophy)
-echo "[3/4] Setting up MixinGradle..."
+echo "[3/6] Setting up MixinGradle..."
 mkdir -p "$MALMO_DIR/libs"
 
 BUILD_SUCCESS=false
@@ -68,7 +104,7 @@ if [ "$BUILD_SUCCESS" = false ]; then
 fi
 
 # 4. Rebuild Malmo
-echo "[4/4] Rebuilding Malmo Minecraft (takes ~2-3 min)..."
+echo "[4/6] Rebuilding Malmo Minecraft (takes ~2-3 min)..."
 cd "$MALMO_DIR"
 BUILD_OUTPUT=$(./gradlew clean build --no-daemon 2>&1)
 

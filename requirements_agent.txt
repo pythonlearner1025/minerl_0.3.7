@@ -1,0 +1,10 @@
+# Minimal dependencies for VLLMAgentWrapper
+# Compatible with Python 3.6+ (minerl 0.3.7 era)
+
+numpy>=1.16.0
+Pillow>=6.0.0
+openai>=0.27.0
+
+# Optional: for minerl environment
+# gym==0.17.3
+# minerl==0.3.7

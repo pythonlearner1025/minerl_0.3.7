@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+
+import argparse
+import time
+import gym
+import minerl
+import numpy as np
+from agent_wrapper import VLLMAgentWrapper
+
+import threading
+import queue
+from agent_logger import AgentLogger
+
+input_queue = queue.Queue()
+
+def get_user_input():
+    while True:
+        msg = input("User command: ")
+        input_queue.put(msg)
+
+# begin user input thread
+input_thread = threading.Thread(target=get_user_input, daemon=1)
+input_thread.start()
+
+def run_realtime_agent(base_url: str,
+                      task: str,
+                      env_name: str = 'MineRLTreechop-v0',
+                      max_steps: int = 200,
+                      sample_interval: float = 0.5,
+                      history_num: int = 0,
+                      instruction_type: str = 'normal',
+                      temperature: float = 0.7,
+                      verbose: bool = True):
+
+    # Initialize logger
+    logger = AgentLogger(log_dir="logs")
+
+    # Create environment first to get action space
+    print(f"\n[1/4] Creating environment: {env_name}")
+    env = gym.make(env_name)
+
+    # Get action space keys
+    action_space_keys = list(env.action_space.spaces.keys())
+    print(f"✓ Environment action space: {action_space_keys}")
+
+    # Initialize agent with action space
+    print("\n[2/4] Initializing VLLM agent...")
+    agent = VLLMAgentWrapper(
+        base_url=base_url,
+        history_num=history_num,
+        action_chunk_len=1,
+        instruction_type=instruction_type,
+        temperature=temperature,
+        action_space_keys=action_space_keys,  # Filter actions to match env
+        logger=logger  # Add logger
+    )
+    print(f"✓ Agent initialized (temp={temperature}, history={history_num})")
+
+    # Enable realtime mode
+    print("\n[3/4] Enabling realtime mode...")
+    env.make_interactive(port=6666, realtime=True)  # Uncomment for GUI mode
+    print("✓ Realtime mode enabled")
+
+    # Reset environment
+    print("\n[4/4] Starting episode...")
+    obs = env.reset()
+    print(f"✓ Episode started - Task: {task}")
+
+    print("AGENT LOOP RUNNING")
+    print(f"Sample interval: {sample_interval}s ({1/sample_interval:.1f} fps)")
+    print(f"Max steps: {max_steps}")
+
+    step_count = 0
+    last_sample_time = time.time()
+    episode_reward = 0.0
+    first = True
+    method = "inventory"
+    try:
+        while step_count < max_steps:
+            current_time = time.time()
+
+            # get user input
+            try:
+                user_msg = input_queue.get_nowait()
+                logger.log_user_command(user_msg)
+
+                # Ignore empty commands
+                if not user_msg.strip():
+                    print("(Empty command ignored)")
+                elif user_msg.lower() == "reset":
+                    print("Resetting env...")
+                    obs = env.reset()
+                    agent.reset()
+                    step_count = 0
+                    episode_reward = 0.0
+                    logger.log_env_reset()
+                else:
+                    agent.reset()
+                    task = user_msg
+                    method = "freestyle"
+                    print(f"New Task: {task}")
+            except queue.Empty:
+                pass
+
+            # Get agent action
+            if verbose:
+                print(f"\n[Step {step_count}] Getting action from agent...")
+            
+            s = time.time()
+            action = agent.forward(
+                observation=obs['pov'],
+                task_instruction=task,
+                method=method,
+                verbose=verbose
+            )
+            e = time.time()
+            if verbose:
+                print(f"wall clock time: {(e-s)*1000:0.2f}") 
+                print(f"  Action: forward={action['forward']}, "
+                      f"jump={action['jump']}, attack={action['attack']}, "
+                      f"camera={action['camera']}")
+
+            obs, reward, done, info = env.step(action)
+
+            episode_reward += reward
+            if reward > 0 and verbose:
+                print(f"  ✓ REWARD: {reward} (total: {episode_reward})")
+
+            if done:
+                print(f"\n✓ Episode completed at step {step_count}!")
+                print(f"  Total reward: {episode_reward}")
+                break
+
+            step_count += 1
+            logger.increment_step()
+            last_sample_time = current_time
+
+            if first:
+                print("waiting for user to connect")
+                #input()
+                first = False
+
+    except KeyboardInterrupt:
+        print("\n\nInterrupted by user!")
+    except Exception as e:
+        logger.log_error(str(e), error_type=type(e).__name__)
+        raise
+
+    # Cleanup
+    env.close()
+    logger.generate_summary()
+    print("\n" + "=" * 70)
+    print("SESSION SUMMARY")
+    print("=" * 70)
+    print(f"Steps completed: {step_count}")
+    print(f"Total reward: {episode_reward}")
+    print(f"Task: {task}")
+    print("=" * 70)
+
+def main():
+    parser = argparse.ArgumentParser(description="Run JarvisVLA agent in realtime mode")
+
+    # VLLM settings
+    parser.add_argument('--base-url', type=str, required=True,
+                       help='VLLM server URL (e.g., http://localhost:8000/v1)')
+
+    # Task settings
+    parser.add_argument('--task', type=str, default='craft item crafting_table',
+                       help='Task instruction')
+    parser.add_argument('--env', type=str, default='MineRLTreechop-v0',
+                       help='MineRL environment name')
+
+    # Agent settings
+    parser.add_argument('--history-num', type=int, default=0,
+                       help='Number of conversation history frames (0 = disabled)')
+    parser.add_argument('--instruction-type', type=str, default='normal',
+                       choices=['normal', 'recipe', 'simple'],
+                       help='Instruction type')
+    parser.add_argument('--temperature', type=float, default=0.7,
+                       help='Sampling temperature')
+
+    # Execution settings
+    parser.add_argument('--max-steps', type=int, default=200,
+                       help='Maximum number of agent steps')
+    parser.add_argument('--sample-interval', type=float, default=0.5,
+                       help='Seconds between observations (default: 0.5 = 2 fps)')
+    parser.add_argument('--verbose', action='store_true',
+                       help='Print debug info')
+
+    args = parser.parse_args()
+
+    run_realtime_agent(
+        base_url=args.base_url,
+        task=args.task,
+        env_name=args.env,
+        max_steps=args.max_steps,
+        sample_interval=args.sample_interval,
+        history_num=args.history_num,
+        instruction_type=args.instruction_type,
+        temperature=args.temperature,
+        verbose=args.verbose
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -38,6 +38,21 @@ echo "[5b/7] Fixing np.int references..."
 sed -i 's/dtype=np\.int)/dtype=int)/g' "$MINERL_PATH/herobraine/hero/handlers/observables.py"
 echo "✓ np.int → int"
 
+# Step 5c: Fix resolution to 640x360 (JarvisVLA training resolution)
+echo "[5c/7] Setting observation resolution to 640x360..."
+sed -i 's/self\.resolution = tuple((64, 64))/self.resolution = tuple((360, 640))/' "$MINERL_PATH/herobraine/env_specs/simple_env_spec.py"
+echo "✓ Resolution: 64x64 → 360x640 (height, width)"
+
+# Step 5d: Fix FOV to 70° (JarvisVLA training FOV)
+echo "[5d/7] Setting Minecraft FOV to 70° (Normal)..."
+sed -i 's/fov:1\.5/fov:0.0/' "$MINERL_PATH/data/assets/template_minecraft/options.txt"
+echo "✓ FOV: 1.5 (105° fish-eye) → 0.0 (70° Normal)"
+
+# Step 5e: Fix XML VideoProducer resolution
+echo "[5e/7] Patching mission XML files for 640x360 video..."
+find "$MINERL_PATH/herobraine/env_specs/missions" -name "*.xml" -exec sed -i 's/<Width>64<\/Width>/<Width>640<\/Width>/g;s/<Height>64<\/Height>/<Height>360<\/Height>/g' {} \;
+echo "✓ Mission XMLs: VideoProducer 64x64 → 640x360"
+
 # Step 6: Build MixinGradle
 echo "[6/7] Building MixinGradle..."
 if [ ! -d "/tmp/MixinGradle" ]; then
