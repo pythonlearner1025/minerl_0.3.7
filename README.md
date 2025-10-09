@@ -1,6 +1,12 @@
 # JarvisVLA in MineRL 0.3.7 
 
-## Installation 
+The project started out forking an older version of [MineRL](https://github.com/minerllabs/minerl) to get human interaction with the agent working, which was broken in the original JarvisVLA's MineStudio implementation. I then noticed JarvisVLA failing in simple tasks like mining oak logs in MineRL 0.3.7's minecraft env, while succeeding in the original JarvisVLA repo's minecraft env.        
+
+## Installing and testing original JarvisVLA  
+
+The embedded JarvisVLA-oak is a fork of [JarvisVLA](https://github.com/CraftJarvis/JarvisVLA) that runs on my machine (Ubuntu 22.04.5 LTS, RTX 3090 Ti with CUDA 13) without conda. Follow the install instructions in the README and run "./run_oak_log_10.sh" to test JarvisVLA in the oak log gathering task for 10 iterations.    
+
+## Installing and testing JarvisVLA in older minerl
 
 ```bash
 ./full_install.sh
