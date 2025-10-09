@@ -1,5 +1,9 @@
 # Virtual environment
-venv/
+agent_env/
+vllm_env/
+logs/
+data/
+
 __pycache__/
 *.pyc
 MixinGradle/

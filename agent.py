@@ -11,6 +11,32 @@ import threading
 import queue
 from agent_logger import AgentLogger
 
+# Simple crafting detection wrapper
+class CraftingDetector:
+    def __init__(self, craft_item):
+        self.craft_item = craft_item
+        self.initial_count = 0
+        self.goal_achieved = False
+
+    def reset(self, obs):
+        if 'inventory' in obs and self.craft_item in obs['inventory']:
+            self.initial_count = obs['inventory'][self.craft_item]
+        else:
+            self.initial_count = 0
+        self.goal_achieved = False
+
+    def check(self, obs, reward, done, info):
+        if 'inventory' in obs and self.craft_item in obs['inventory']:
+            current_count = obs['inventory'][self.craft_item]
+            if current_count > self.initial_count and current_count > 0:
+                self.goal_achieved = True
+                reward = 1.0
+                done = True
+                info['goal_achieved'] = True
+                info[f'{self.craft_item}_count'] = int(current_count)
+                print(f"✓ {self.craft_item} crafted! Count: {current_count}")
+        return reward, done, info
+
 input_queue = queue.Queue()
 
 def get_user_input():
@@ -30,7 +56,8 @@ def run_realtime_agent(base_url: str,
                       history_num: int = 0,
                       instruction_type: str = 'normal',
                       temperature: float = 0.7,
-                      verbose: bool = True):
+                      verbose: bool = True,
+                      craft_item: str = None):
 
     # Initialize logger
     logger = AgentLogger(log_dir="logs")
@@ -65,6 +92,15 @@ def run_realtime_agent(base_url: str,
     print("\n[4/4] Starting episode...")
     obs = env.reset()
     print(f"✓ Episode started - Task: {task}")
+
+    # Initialize crafting detector if specified
+    crafting_detector = None
+    if craft_item:
+        crafting_detector = CraftingDetector(craft_item)
+        crafting_detector.reset(obs)
+        print(f"✓ Crafting detection enabled for: {craft_item}")
+        if 'inventory' in obs:
+            print(f"✓ Initial {craft_item} count: {obs['inventory'].get(craft_item, 0)}")
 
     print("AGENT LOOP RUNNING")
     print(f"Sample interval: {sample_interval}s ({1/sample_interval:.1f} fps)")
@@ -107,6 +143,7 @@ def run_realtime_agent(base_url: str,
                 print(f"\n[Step {step_count}] Getting action from agent...")
             
             s = time.time()
+            print(f'task: {task}') 
             action = agent.forward(
                 observation=obs['pov'],
                 task_instruction=task,
@@ -122,6 +159,10 @@ def run_realtime_agent(base_url: str,
 
             obs, reward, done, info = env.step(action)
 
+            # Check crafting detection if enabled
+            if crafting_detector:
+                reward, done, info = crafting_detector.check(obs, reward, done, info)
+
             episode_reward += reward
             if reward > 0 and verbose:
                 print(f"  ✓ REWARD: {reward} (total: {episode_reward})")
@@ -129,6 +170,8 @@ def run_realtime_agent(base_url: str,
             if done:
                 print(f"\n✓ Episode completed at step {step_count}!")
                 print(f"  Total reward: {episode_reward}")
+                if crafting_detector and crafting_detector.goal_achieved:
+                    print(f"  🎉 Goal achieved: {craft_item} crafted!")
                 break
 
             step_count += 1
@@ -161,26 +204,28 @@ def main():
     parser = argparse.ArgumentParser(description="Run JarvisVLA agent in realtime mode")
 
     # VLLM settings
-    parser.add_argument('--base-url', type=str, required=True,
+    parser.add_argument('--base-url', type=str, default="http://localhost:3000/v1",
                        help='VLLM server URL (e.g., http://localhost:8000/v1)')
 
     # Task settings
-    parser.add_argument('--task', type=str, default='craft item crafting_table',
+    parser.add_argument('--task', type=str, default='Mine the oak log.',
                        help='Task instruction')
     parser.add_argument('--env', type=str, default='MineRLTreechop-v0',
                        help='MineRL environment name')
+    parser.add_argument('--craft', type=str, default="oak_log",
+                       help='Detect when this item is crafted and end episode (e.g., crafting_table)')
 
     # Agent settings
-    parser.add_argument('--history-num', type=int, default=0,
+    parser.add_argument('--history-num', type=int, default=2,
                        help='Number of conversation history frames (0 = disabled)')
     parser.add_argument('--instruction-type', type=str, default='normal',
                        choices=['normal', 'recipe', 'simple'],
                        help='Instruction type')
-    parser.add_argument('--temperature', type=float, default=0.7,
+    parser.add_argument('--temperature', type=float, default=0.6,
                        help='Sampling temperature')
 
     # Execution settings
-    parser.add_argument('--max-steps', type=int, default=200,
+    parser.add_argument('--max-steps', type=int, default=10000,
                        help='Maximum number of agent steps')
     parser.add_argument('--sample-interval', type=float, default=0.5,
                        help='Seconds between observations (default: 0.5 = 2 fps)')
@@ -188,6 +233,11 @@ def main():
                        help='Print debug info')
 
     args = parser.parse_args()
+
+    # Auto-switch to environment with inventory if craft detection is enabled
+    if args.craft and args.env == 'MineRLTreechop-v0':
+        print("Auto-switching to MineRLObtainTest-v0 (has inventory + crafting)")
+        args.env = 'MineRLObtainTest-v0'
 
     run_realtime_agent(
         base_url=args.base_url,
@@ -198,7 +248,8 @@ def main():
         history_num=args.history_num,
         instruction_type=args.instruction_type,
         temperature=args.temperature,
-        verbose=args.verbose
+        verbose=args.verbose,
+        craft_item=args.craft
     )
 
 

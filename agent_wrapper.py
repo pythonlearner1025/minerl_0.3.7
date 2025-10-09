@@ -195,10 +195,10 @@ class VLLMAgentWrapper:
                  base_url: str,
                  api_key: str = "EMPTY",
                  checkpoint_path: str = None,
-                 history_num: int = 0,
+                 history_num: int = 2,
                  action_chunk_len: int = 1,
                  instruction_type: Literal['simple', 'recipe', 'normal'] = 'normal',
-                 temperature: float = 0.7,
+                 temperature: float = 0.6,
                  tokenizer_type: str = "qwen2_vl",
                  action_space_keys: list = None,
                  logger=None):
@@ -233,6 +233,8 @@ class VLLMAgentWrapper:
         self.bases = [10, 3, 3, 3, 2, 2, 2, 2, 2, 2, 21, 21]
         self.act_beg_id = tag_token(0, tokenizer_type, return_type=1)
         self.act_end_id = tag_token(1, tokenizer_type, return_type=1)
+        self.act_beg_token = tag_token(0, tokenizer_type, return_type=0) 
+        self.act_end_token = tag_token(1, tokenizer_type, return_type=0)
 
         # Conversation history
         self.history = []
@@ -396,11 +398,21 @@ class VLLMAgentWrapper:
 
     def _create_image_message(self, image: Union[np.ndarray, Image.Image]) -> dict:
         """Create OpenAI API image message from observation."""
-        # Convert to PIL if needed (no resize - env already provides 640x360)
+        # Convert to PIL if needed
         if isinstance(image, np.ndarray):
             image_pil = Image.fromarray(image.astype('uint8'))
         else:
             image_pil = image
+
+        # CRITICAL FIX: Qwen2-VL requires dimensions divisible by 28 (patch size)
+        # Without this, vision encoder receives misaligned patches -> corrupted features
+        width, height = image_pil.size
+        factor = 28
+        resized_width = round(width / factor) * factor
+        resized_height = round(height / factor) * factor
+
+        if (resized_width, resized_height) != (width, height):
+            image_pil = image_pil.resize((resized_width, resized_height), Image.LANCZOS)
 
         # Log preprocessed image that's actually sent to VLLM
         if self.logger:
@@ -409,7 +421,8 @@ class VLLMAgentWrapper:
                 "datetime": datetime.now().isoformat(),
                 "type": "image_preprocessing",
                 "step": self.logger.step_count,
-                "image_size": image_pil.size  # (width, height)
+                "image_size_original": (width, height),
+                "image_size_resized": image_pil.size  # (width, height)
             })
             self.logger.log_preprocessed_image(image_pil)
 
@@ -437,8 +450,9 @@ class VLLMAgentWrapper:
         """
         message = {"role": role, "content": []}
 
-        # Add text
-        message["content"].append({"type": "text", "text": prompt})
+        # Add text (with trailing newline for tokenization compatibility)
+        text_content = prompt if prompt.endswith('\n') else prompt + '\n'
+        message["content"].append({"type": "text", "text": text_content})
 
         # Add image if provided
         if image is not None:
@@ -646,7 +660,7 @@ class VLLMAgentWrapper:
 
         # Add history if enabled
         if self.history_num and self.history:
-            for hist_image, hist_action, hist_thought, hist_idx in self.history:
+            for hist_idx, (hist_image, hist_action, hist_thought, _) in enumerate(self.history):
                 if self.instruction_type == 'recipe':
                     prompt = f"\nthought: {hist_thought}\nobservation: "
                 else:
@@ -669,7 +683,7 @@ class VLLMAgentWrapper:
         else:
             prompt = "\nobservation: "
 
-        if not self.history_num:
+        if not self.history_num or not self.history:
             prompt = instruction + prompt
 
         messages.append(self._create_vllm_message("user", prompt, observation))
@@ -689,10 +703,24 @@ class VLLMAgentWrapper:
             temperature=self.temperature,
             max_tokens=1024,
             top_p=0.99,
+            logprobs=True,  # Enable logprobs to ensure sampling works
             extra_body={"skip_special_tokens": False, "top_k": -1}
         )
 
         outputs = chat_completion.choices[0].message.content
+
+        # Clean up VLLM response format issues
+        # Sometimes VLLM returns: "['<|token|>']\n" instead of "<|token|>"
+        if isinstance(outputs, list):
+            outputs = outputs[0] if len(outputs) > 0 else ""
+        elif isinstance(outputs, str):
+            # Strip list-like wrapper: "['...']" -> "..."
+            outputs = outputs.strip()
+            if outputs.startswith("['") and outputs.endswith("']"):
+                outputs = outputs[2:-2]  # Remove [' and ']
+            elif outputs.startswith('["') and outputs.endswith('"]'):
+                outputs = outputs[2:-2]  # Remove [" and "]
+
         vllm_end = time.time()
         vllm_time_ms = (vllm_end - vllm_start) * 1000
 
