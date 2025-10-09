@@ -66,12 +66,13 @@ I suspect the cause of the failures is running the agent in a different minecraf
 
 So I tested with JarvisVLA official repo:
 ```bash
-./home/minjune/JarvisVLA-oak/run_oak_log_10.sh
+cd JarvisVLA-oak
+./JarvisVLA-oak/run_oak_log_10.sh
 ```
 
-Results videos in /home/minjune/JarvisVLA-oak/logs/{0-9}
+Results videos will be saved in JarvisVLA-oak/logs/
 
-Qualitatively the agent performs MUCH better! 
+Qualitatively/quantitatively the agent performs MUCH better (average 70% success rate out of 10 tries, and more complex behavior like moving around to actively find trees)! 
 
 To exactly replicate environment from JarvisVLA-oak, I copied over its options.txt file while removing newer featuers. 
 
@@ -91,11 +92,15 @@ wall clock time: 458.30
   Action: forward=0, jump=0, attack=1, camera=[0. 0.]
 ```
 
-I rechecked special token -> minerl action mapping to confirm its correct + message formatting being sent to VLLM. Concluding that it is indeed out of distribution brittleness. 
+I rechecked special token -> minerl action mapping to confirm its correct + message formatting being sent to VLLM. 
+
+I don't know the exact cause without ablating the working JarvisVLA-oak implementation exhaustively to replicate the behavior seen in MineRL 0.3.7. 
+
+But given the OpenAI format message being sent to the VLLM server hosting JarvisVLA is exactly the same in both repositories, I can say the cause is some Minecraft environment mismatch. 
 
 ## Conclusion
 
-This was my first venture into getting a "VLA" model to work, and it immediately ran into brittleness issues with small environment changes. While I can't be certain exactly what the cause is (would require ablations in working MineStudio env to replicate behavior of MineRL, frankly don't have time to do this), I got a taste of how subtle shifts in environment distribution can break models that are very strong on paper.    
+This was my first venture into getting a "VLA" model to work, and it immediately ran into brittleness issues with small environment changes. Got a taste of subtle shifts in environment breaking models that are strong on paper.     
 
 ## Modifications from MineRL
 
