@@ -10,6 +10,8 @@ The embedded JarvisVLA-oak is a fork of [JarvisVLA](https://github.com/CraftJarv
 
 ```bash
 ./full_install.sh
+source agent_env/bin/activate
+pip install -r requirements_agent.txt
 ```
 ```bash
 python -m venv vllm_env
