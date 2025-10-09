@@ -9,8 +9,8 @@ cd "$(dirname "$0")"
 
 # Step 1: Create venv
 echo "[1/7] Creating venv..."
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv agent_env
+source agent_env/bin/activate
 
 # Step 2: Install minerl with compatible versions
 echo "[2/7] Installing minerl==0.3.7 with compatible gym/numpy (this takes ~2 min)..."
@@ -90,6 +90,6 @@ echo "       cd $MALMO_DIR"
 echo "       ./gradlew clean build"
 echo ""
 echo "Or just test if it works:"
-echo "  source venv/bin/activate"
+echo "  source agent_env/bin/activate"
 echo "  python test_minerl_server.py"
 echo ""
