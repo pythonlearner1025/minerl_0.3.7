@@ -52,7 +52,9 @@ This will automatically spawn a new minecraft client and connect you to agent's 
 
 ## Notes
 
-JarvisVLA is very brittle. I tried several prompts of the variation "hit tree and get logs," and across all of them success rate is low (<10%). In the success cases, JarvisVLA spawned withe tree trunk in the center of the screen, within or one or two blocks away from hitting range. The primary failure mode seems to be tree detection and navigation. In the first case, it would begin hitting objects that are not trees (dirt blocks or leaf blocks). In the second case, if it spawned away from trees it wouldn't move towards visible trees, and instead spend all remaining steps moving randomly.         
+JarvisVLA is very brittle. I tried several prompts of the variation "hit tree and get logs," and across all of them success rate is low (<10%). In the success cases, JarvisVLA spawned withe tree trunk in the center of the screen, within or one or two blocks away from hitting range. 
+
+The two main failure modes were tree detection and attack spamming. In the first case, it would begin hitting objects that are not trees (dirt blocks or leaf blocks). In the second case, the agent spent all steps attacking and doing nothing else.         
 
 I suspect the cause of the failures is running the agent in a different minecraft version (1.12.1) and graphic settings relative to its training data. 
 
@@ -66,60 +68,6 @@ Results videos in /home/minjune/JarvisVLA-oak/logs/{0-9}
 Qualitatively the agent performs MUCH better! 
 
 To exactly replicate environment from JarvisVLA-oak, I copied over its options.txt file while removing newer featuers. 
-
-diff --git a/options.txt b/options.txt
-index old_B..new_B 100644
---- a/options.txt
-+++ b/options.txt
-@@ -3,10 +3,10 @@ invertYMouse:false
- mouseSensitivity:0.5
- fov:0.0
- gamma:2.0
- saturation:0.0
--renderDistance:4
--guiScale:0
--particles:2
--bobView:false
-+renderDistance:8
-+guiScale:2
-+particles:0
-+bobView:true
- anaglyph3d:false
--maxFps:-1
-+maxFps:260
- fboEnable:true
-@@ -20,7 +20,7 @@ chatColors:true
- chatLinks:true
- chatLinksPrompt:true
- chatOpacity:1.0
--snooperEnabled:true
-+snooperEnabled:false
- fullscreen:false
- enableVsync:false
- useVbo:true
-@@ -74,11 +74,11 @@ key_key.hotbar.9:10
- key_key.toggleMalmo:28
- key_key.handyTestHook:22
- soundCategory_master:0.0
--soundCategory_music:1.0
--soundCategory_record:1.0
--soundCategory_weather:1.0
--soundCategory_block:1.0
--soundCategory_hostile:1.0
--soundCategory_neutral:1.0
--soundCategory_player:1.0
--soundCategory_ambient:1.0
--soundCategory_voice:1.0
-+soundCategory_music:0.2
-+soundCategory_record:0.2
-+soundCategory_weather:0.2
-+soundCategory_block:0.2
-+soundCategory_hostile:0.2
-+soundCategory_neutral:0.2
-+soundCategory_player:0.2
-+soundCategory_ambient:0.2
-+soundCategory_voice:0.2
- modelPart_cape:true
 
 The primary changes to replicate minestudio was changing MineRL's old FOV (130 Quake Pro mode) to 70 (Minestudio's default), setting gamma (brightness) to 2.0, and doubling particle quality. 
 
@@ -138,6 +86,10 @@ wall clock time: 458.30
 ```
 
 I rechecked special token -> minerl action mapping to confirm its correct + message formatting being sent to VLLM. Concluding that it is indeed out of distribution brittleness. 
+
+## Conclusion
+
+This was my first venture into getting a "VLA" model to work, and it immediately ran into brittleness issues with small environment changes. While I can't be certain exactly what the cause is (would require ablations in working MineStudio env to replicate behavior of MineRL, frankly don't have time to do this), I got a taste of how subtle shifts in environment distribution can break models that are very strong on paper.    
 
 ## Modifications from MineRL
 
