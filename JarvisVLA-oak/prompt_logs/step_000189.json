@@ -1,0 +1,62 @@
+{
+  "step": 189,
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Cut down the tree and harvest oak logs.\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "['<|reserved_special_token_178|><|reserved_special_token_214|><|reserved_special_token_245|><|reserved_special_token_179|>']\n\n"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "['<|reserved_special_token_178|><|reserved_special_token_220|><|reserved_special_token_238|><|reserved_special_token_179|>']\n\n"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    }
+  ]
+}

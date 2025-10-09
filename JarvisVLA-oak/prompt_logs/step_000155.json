@@ -1,0 +1,62 @@
+{
+  "step": 155,
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Collect oak log for crafting.\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "['<|reserved_special_token_178|><|reserved_special_token_217|><|reserved_special_token_243|><|reserved_special_token_179|>']\n\n"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "['<|reserved_special_token_178|><|reserved_special_token_216|><|reserved_special_token_244|><|reserved_special_token_179|>']\n\n"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    }
+  ]
+}

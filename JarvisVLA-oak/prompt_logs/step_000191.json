@@ -1,0 +1,62 @@
+{
+  "step": 191,
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Break the tree to get oak logs.\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "['<|reserved_special_token_178|><|reserved_special_token_213|><|reserved_special_token_248|><|reserved_special_token_179|>']\n\n"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "['<|reserved_special_token_178|><|reserved_special_token_219|><|reserved_special_token_235|><|reserved_special_token_179|>']\n\n"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "\nobservation: \n"
+        },
+        {
+          "type": "image",
+          "note": "[image data omitted]"
+        }
+      ]
+    }
+  ]
+}
