@@ -3,6 +3,7 @@ agent_env/
 vllm_env/
 logs/
 data/
+claude-docs/
 
 __pycache__/
 *.pyc
